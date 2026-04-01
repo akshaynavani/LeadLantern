@@ -40,7 +40,7 @@ class TaskController extends Controller
             ->when($filters['q'] ?? null, fn ($q, $v) => $q->where(fn ($w) => $w
                 ->where('title', 'like', "%{$v}%")
                 ->orWhere('description', 'like', "%{$v}%")))
-            ->orderByRaw("FIELD(priority, 'urgent', 'high', 'medium', 'low') IS NULL, FIELD(priority, 'urgent', 'high', 'medium', 'low')")
+            ->orderByRaw("CASE priority WHEN 'urgent' THEN 1 WHEN 'high' THEN 2 WHEN 'medium' THEN 3 WHEN 'low' THEN 4 ELSE 5 END")
             ->latest('id')
             ->paginate($filters['per_page'] ?? 25);
 
