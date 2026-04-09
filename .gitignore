@@ -1,0 +1,33 @@
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# PHP / Laravel
+backend/vendor/
+backend/bootstrap/cache/*.php
+backend/storage/logs/*.log
+backend/storage/framework/cache/*
+backend/storage/framework/sessions/*
+backend/storage/framework/views/*
+!backend/storage/framework/*/.gitkeep
+backend/database/*.sqlite
+backend/.phpunit.result.cache
+backend/.phpunit.cache/
+
+# Node
+node_modules/
+npm-debug.log*
+dist/
+coverage/
+*.tsbuildinfo
+
+# Serverless
+.serverless/
+.esbuild/
