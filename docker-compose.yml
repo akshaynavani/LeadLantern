@@ -1,0 +1,21 @@
+# Local development dependencies. Run the apps themselves with `make dev-*`.
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: leadlantern
+      MYSQL_USER: leadlantern
+      MYSQL_PASSWORD: ${DB_PASSWORD:-leadlantern}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootpassword}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      retries: 20
+
+volumes:
+  mysql-data:

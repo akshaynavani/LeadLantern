@@ -1,0 +1,38 @@
+# LangChain triage classifier as a native Node.js Lambda with a Function URL.
+service: leadlantern-triage
+
+provider:
+  name: aws
+  region: ${opt:region, 'us-east-1'}
+  stage: ${opt:stage, 'dev'}
+  runtime: nodejs20.x
+  architecture: arm64
+  memorySize: 512
+  timeout: 25
+  environment:
+    NODE_OPTIONS: --enable-source-maps
+    TRIAGE_SHARED_SECRET: ${ssm:/leadlantern/${sls:stage}/triage-secret}
+    OPENAI_API_KEY: ${ssm:/leadlantern/${sls:stage}/openai-api-key}
+    OPENAI_MODEL: ${param:openaiModel, 'gpt-4o-mini'}
+    LLM_TIMEOUT_MS: "15000"
+
+plugins:
+  - serverless-esbuild
+
+custom:
+  esbuild:
+    bundle: true
+    minify: false
+    sourcemap: true
+    target: node20
+    platform: node
+    format: esm
+    outputFileExtension: .mjs
+    banner:
+      js: "import { createRequire } from 'module'; const require = createRequire(import.meta.url);"
+
+functions:
+  triage:
+    handler: src/handler.handler
+    url: true # Function URL; protected by the X-Triage-Secret header
+    reservedConcurrency: 20 # cap LLM spend under bursty load

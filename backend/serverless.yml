@@ -1,0 +1,60 @@
+# Laravel API on AWS Lambda via Bref.
+# Secrets live in SSM Parameter Store under /leadlantern/<stage>/...
+service: leadlantern-api
+
+provider:
+  name: aws
+  region: ${opt:region, 'us-east-1'}
+  stage: ${opt:stage, 'dev'}
+  runtime: provided.al2
+  architecture: arm64
+  environment:
+    APP_ENV: production
+    APP_DEBUG: "false"
+    APP_KEY: ${ssm:/leadlantern/${sls:stage}/app-key}
+    LOG_CHANNEL: stderr
+    SESSION_DRIVER: array
+    CACHE_STORE: array
+    QUEUE_CONNECTION: sync
+    DB_CONNECTION: mysql
+    DB_HOST: ${ssm:/leadlantern/${sls:stage}/db-host}
+    DB_PORT: "3306"
+    DB_DATABASE: leadlantern
+    DB_USERNAME: ${ssm:/leadlantern/${sls:stage}/db-username}
+    DB_PASSWORD: ${ssm:/leadlantern/${sls:stage}/db-password}
+    FRONTEND_URL: ${ssm:/leadlantern/${sls:stage}/frontend-url}
+    TRIAGE_SERVICE_URL: ${ssm:/leadlantern/${sls:stage}/triage-url}
+    TRIAGE_SHARED_SECRET: ${ssm:/leadlantern/${sls:stage}/triage-secret}
+    TRIAGE_TIMEOUT_SECONDS: "20"
+    TRIAGE_MIN_CONFIDENCE: "0.6"
+  # RDS MySQL lives in private subnets; the functions join the same VPC.
+  vpc:
+    securityGroupIds:
+      - ${ssm:/leadlantern/${sls:stage}/lambda-sg-id}
+    subnetIds: ${ssm:/leadlantern/${sls:stage}/private-subnet-ids}
+
+plugins:
+  - ./vendor/bref/bref
+
+functions:
+  web:
+    handler: public/index.php
+    runtime: php-82-fpm
+    timeout: 28 # API Gateway hard limit is 29s; triage call is capped at 20s
+    memorySize: 1024
+    events:
+      - httpApi: "*"
+
+  artisan:
+    handler: artisan
+    runtime: php-82-console
+    timeout: 300
+
+package:
+  patterns:
+    - "!node_modules/**"
+    - "!tests/**"
+    - "!storage/logs/**"
+    - "!storage/framework/{cache,sessions,views}/**"
+    - "!.env*"
+    - "!database/*.sqlite"
